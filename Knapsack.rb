@@ -1,9 +1,8 @@
 # require 'pp'
 # require 'pry-byebug'
 
-# current generetion => 10
-# next generation => 10
-# generation lasts => 3 or 4 (better)
+# current, next generetion => :gene_size
+# generation lasts => :gene_lasts
 # binary encoding
 # tournament selection => 4
 # two-point crossover
@@ -14,12 +13,16 @@
 class Knapsack
   def initialize(conf)
     @conf = conf
-    @capacity = @conf[:capacity]
-    @weights  = @conf[:weight]
-    @prices   = @conf[:price]
-    @names    = @conf[:name]
+    @capacity   = @conf[:capacity]
+    @weights    = @conf[:weight]
+    @prices     = @conf[:price]
+    @names      = @conf[:name]
     # element counts
-    @elements = @conf[:name].length
+    @elements   = @conf[:name].length
+    # generation size
+    @gene_size  = @conf[:gene_size]
+    # generation lasts
+    @gene_lasts = @conf[:gene_lasts]
     # current, next generation (for binary)
     @cg   = []
     @ng   = []
@@ -35,12 +38,18 @@ class Knapsack
     @s2   = -1
     # now generation
     @gene = 1
+    # for result
+    @best_price   = -1
+    @best_weight  = -1
+    @best_baggage = []
   end
 
   def run
     gene_init
-    until @gene == 6
+    until @gene == @gene_lasts
       evaluation
+      break if check_evalation
+      update_best
       reproduction until @ng.length == 10
       migrate_next_gene
     end
@@ -55,6 +64,7 @@ class Knapsack
     @ng << @tg[@s2]
   end
 
+  # to migrate next generation
   def migrate_next_gene
     @gene += 1
     @cg.clear
@@ -63,10 +73,9 @@ class Knapsack
   end
 
   # generate first generation
-  # todo; more efficiency than this
   def gene_init
     bin = [0, 1]
-    10.times do
+    @gene_size.times do
       temp = []
       @elements.times do
         temp << bin.sample
@@ -98,8 +107,14 @@ class Knapsack
     end
   end
 
+  # check evaluated price to avoid all '-1'
+  # if all elements is '-1', return best answer and exit process (line 51)
+  def check_evalation
+    return true if @ep.count(-1) == @gene_size
+    false
+  end
+
   # select from evaluated prices
-  # todo; avoid to conflict (@s1, @s2)
   def selection
     @tg.clear
     s1_temp, s2_temp = -1, -1
@@ -133,24 +148,29 @@ class Knapsack
     end
   end
 
-  def result
-    evaluation
-    price = @ep.max
-    res_i = @ep.index(price)
-    weight = @bw[res_i]
-    baggage = in_bag(@cg[res_i])
-    puts "gene  : #{@cg[res_i]}"
-    puts "price : #{price}"
-    puts "weight: #{weight}"
-    puts "inside: #{baggage}"
+  # to update best price and weight for result
+  def update_best
+    if @best_price < @ep.max
+      @best_price = @ep.max
+      res_i = @ep.index(@best_price)
+      @best_weight = @bw[res_i]
+      @best_baggage = in_bag(@cg[res_i])
+    end
   end
 
+  # to relate binary to baggage name
   def in_bag(inside)
     baggage = []
     inside.each_with_index do |m, index|
       baggage << @names[index] if m == 1
     end
     baggage
+  end
+
+  def result
+    puts "price : #{@best_price}"
+    puts "weight: #{@best_weight}"
+    puts "inside: #{@best_baggage}"
   end
 end
 
@@ -160,22 +180,9 @@ init = {
   capacity: 5,
   weight: [0.9, 1.1, 0.7, 1.4, 0.5, 1.3, 1.1, 1.6],
   price: [1.0, 1.3, 0.9, 1.5, 0.5, 1.1, 1.2, 1.4],
-  name: %w(b1 b2 b3 b4 b5 b6 b7 b8)
+  name: %w(b1 b2 b3 b4 b5 b6 b7 b8),
+  gene_size: 10,
+  gene_lasts: 5
 }
 
 Knapsack.new(init).run
-
-# error
-# GA.rb:112:in `each': Interrupt
-#         from GA.rb:112:in `max'
-#         from GA.rb:112:in `selection'
-#         from GA.rb:57:in `reproduction'
-#         from GA.rb:51:in `run'
-#         from GA.rb:43:in `start'
-#         from GA.rb:152:in `<main>'
-
-# wrong answer
-# gene  :[0, 1, 1, 1, 1, 1, 1, 0]
-# price : -1
-# weight: -1
-# inside: ["b2", "b3", "b4", "b5", "b6", "b7"]
