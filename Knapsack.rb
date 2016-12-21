@@ -1,6 +1,3 @@
-# require 'pp'
-# require 'pry-byebug'
-
 # current, next generetion => :gene_size
 # generation lasts => :gene_lasts
 # binary encoding
@@ -50,7 +47,7 @@ class Knapsack
       evaluation
       break if check_evalation
       update_best
-      reproduction until @ng.length == 10
+      reproduction until @ng.length == @gene_size
       migrate_next_gene
     end
     result
@@ -110,14 +107,15 @@ class Knapsack
   # check evaluated price to avoid all '-1'
   # if all elements is '-1', return best answer and exit process (line 51)
   def check_evalation
-    return true if @ep.count(-1) == @gene_size
+    return true if @ep.count(-1) >= @gene_size
     false
   end
 
   # select from evaluated prices
   def selection
     @tg.clear
-    s1_temp, s2_temp = -1, -1
+    s1_temp = -1
+    s2_temp = -1
     s1_temp = @ep.sample(@ss).max until s1_temp != -1
     s2_temp = @ep.sample(@ss).max until s2_temp != -1
     @s1 = @ep.index(s1_temp)
@@ -151,9 +149,9 @@ class Knapsack
   # to update best price and weight for result
   def update_best
     if @best_price < @ep.max
-      @best_price = @ep.max
-      res_i = @ep.index(@best_price)
-      @best_weight = @bw[res_i]
+      @best_price   = @ep.max
+      res_i         = @ep.index(@best_price)
+      @best_weight  = @bw[res_i]
       @best_baggage = in_bag(@cg[res_i])
     end
   end
@@ -176,12 +174,21 @@ end
 
 #################################################
 
+# init = {
+#   capacity: 5,
+#   weight: [0.9, 1.1, 0.7, 1.4, 0.5, 1.3, 1.1, 1.6],
+#   price: [1.0, 1.3, 0.9, 1.5, 0.5, 1.1, 1.2, 1.4],
+#   name: %w(b1 b2 b3 b4 b5 b6 b7 b8),
+#   gene_size: 10,
+#   gene_lasts: 5
+# }
+
 init = {
-  capacity: 5,
-  weight: [0.9, 1.1, 0.7, 1.4, 0.5, 1.3, 1.1, 1.6],
-  price: [1.0, 1.3, 0.9, 1.5, 0.5, 1.1, 1.2, 1.4],
-  name: %w(b1 b2 b3 b4 b5 b6 b7 b8),
-  gene_size: 10,
+  capacity: 20,
+  weight: [10, 4, 5, 1, 7, 3, 6, 3],
+  price: [7, 2, 9, 4, 9, 7, 4, 5],
+  name: %w(A B C D E F G H),
+  gene_size: 20,
   gene_lasts: 5
 }
 
